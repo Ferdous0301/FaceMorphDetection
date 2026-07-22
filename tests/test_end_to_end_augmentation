@@ -1,0 +1,327 @@
+"""Full integration test for the FMAD Data Augmentation stage.
+
+This test exercises the entire augmentation stage as an integrated
+whole: a synthetic, on-disk dataset is generated with NumPy, the
+public :func:`~src.augmentation.augment_dataset.augment_dataset` API
+is invoked with a chain of real operators, and the resulting output
+directory, filenames, image content, and summary statistics are all
+verified.
+
+Only synthetic NumPy images written to temporary directories are used;
+no external datasets are required or referenced.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import cv2
+import numpy as np
+import pytest
+
+from src.augmentation import (
+    BrightnessOperator,
+    DatasetProcessingSummary,
+    HorizontalFlipOperator,
+    augment_dataset,
+)
+from src.augmentation.operators.contrast import ContrastOperator
+from src.augmentation.operators.gaussian_noise import GaussianNoiseOperator
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _make_synthetic_image(*, height: int = 20, width: int = 20, seed: int) -> np.ndarray:
+    """Build a small, deterministic synthetic RGB image.
+
+    Args:
+        height: The image height in pixels.
+        width: The image width in pixels.
+        seed: A seed controlling the pixel content.
+
+    Returns:
+        numpy.ndarray: An ``(height, width, 3)`` ``uint8`` array.
+    """
+    rng = np.random.default_rng(seed)
+    return rng.integers(0, 256, size=(height, width, 3), dtype=np.uint8)
+
+
+def _write_image(path: Path, image_rgb: np.ndarray) -> None:
+    """Write a synthetic RGB image to disk at ``path`` using OpenCV.
+
+    Args:
+        path: The destination file path; parent directories are
+            created automatically.
+        image_rgb: The image to write, in RGB channel order.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
+    success, buffer = cv2.imencode(path.suffix, image_bgr)
+    assert success
+    buffer.tofile(str(path))
+
+
+def _write_corrupted_file(path: Path) -> None:
+    """Write garbage bytes to ``path`` to simulate a corrupted image file.
+
+    Args:
+        path: The destination file path; parent directories are
+            created automatically.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"not-a-real-image-file")
+
+
+def _build_synthetic_dataset(root: Path) -> dict[str, Path]:
+    """Populate ``root`` with a small, realistic FMAD-style dataset layout.
+
+    The layout mimics a real morph-attack-detection dataset: a
+    ``train`` split with per-identity subdirectories containing both
+    bona fide and morphed images, plus one corrupted file to exercise
+    failure handling.
+
+    Args:
+        root: The dataset root to populate.
+
+    Returns:
+        dict[str, pathlib.Path]: A mapping from a short logical name to
+        the path of each file written, for use in assertions.
+    """
+    paths: dict[str, Path] = {}
+
+    paths["bonafide_1"] = root / "train" / "bonafide" / "person001" / "img01.jpg"
+    _write_image(paths["bonafide_1"], _make_synthetic_image(seed=1))
+
+    paths["bonafide_2"] = root / "train" / "bonafide" / "person002" / "img01.png"
+    _write_image(paths["bonafide_2"], _make_synthetic_image(seed=2))
+
+    paths["morph_1"] = root / "train" / "morph" / "person001_person002" / "morph01.jpg"
+    _write_image(paths["morph_1"], _make_synthetic_image(seed=3))
+
+    paths["corrupted"] = root / "train" / "bonafide" / "person001" / "corrupted.jpg"
+    _write_corrupted_file(paths["corrupted"])
+
+    paths["ignored_readme"] = root / "train" / "README.txt"
+    paths["ignored_readme"].parent.mkdir(parents=True, exist_ok=True)
+    paths["ignored_readme"].write_text("Not an image; must be ignored.")
+
+    return paths
+
+
+# ---------------------------------------------------------------------------
+# Full pipeline integration test
+# ---------------------------------------------------------------------------
+
+
+def test_full_augmentation_pipeline_end_to_end(tmp_path: Path) -> None:
+    """Run the full augmentation stage over a synthetic dataset and verify every guarantee."""
+    input_root = tmp_path / "dataset_input"
+    output_root = tmp_path / "dataset_output"
+    dataset_paths = _build_synthetic_dataset(input_root)
+
+    operators = [
+        BrightnessOperator(probability=1.0, random_state=42),
+        HorizontalFlipOperator(probability=1.0, random_state=42),
+    ]
+
+    summary = augment_dataset(input_root, output_root, operators=operators)
+
+    # --- recursive discovery & summary statistics -----------------------------
+    assert isinstance(summary, DatasetProcessingSummary)
+    assert summary.total_images == 4  # three good images plus one corrupted file discovered
+    assert summary.processed_images == 3
+    assert summary.augmented_images == 3
+    assert summary.failed_images == 1
+    assert summary.skipped_images == 0
+    assert summary.elapsed_time >= 0.0
+    assert summary.output_directory == output_root
+    assert len(summary.failures) == 1
+    assert str(dataset_paths["corrupted"]) == summary.failures[0][0]
+
+    # --- output directory structure preserved ---------------------------------
+    assert (output_root / "train" / "bonafide" / "person001").is_dir()
+    assert (output_root / "train" / "bonafide" / "person002").is_dir()
+    assert (output_root / "train" / "morph" / "person001_person002").is_dir()
+
+    # --- filenames generated correctly (deterministic, operator-suffixed) ------
+    bonafide_1_outputs = list((output_root / "train" / "bonafide" / "person001").glob("img01_aug_*.jpg"))
+    assert len(bonafide_1_outputs) == 1
+    output_name = bonafide_1_outputs[0].name
+    assert output_name.startswith("img01_aug_")
+    assert "brightness" in output_name
+    assert "horizontal_flip" in output_name
+
+    # No output was ever produced for the corrupted or non-image files.
+    assert not (output_root / "train" / "bonafide" / "person001" / "corrupted.jpg").exists()
+    assert not any((output_root / "train").rglob("README*"))
+
+    # --- augmented images actually saved and readable --------------------------
+    saved_bgr = cv2.imread(str(bonafide_1_outputs[0]), cv2.IMREAD_COLOR)
+    assert saved_bgr is not None
+    assert saved_bgr.shape == (20, 20, 3)
+
+    # --- operators actually executed (output differs from the source) ---------
+    saved_rgb = cv2.cvtColor(saved_bgr, cv2.COLOR_BGR2RGB)
+    original_image = cv2.cvtColor(
+        cv2.imread(str(dataset_paths["bonafide_1"]), cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB
+    )
+    assert not np.array_equal(saved_rgb, original_image)
+
+
+def test_full_pipeline_failures_do_not_terminate_execution(tmp_path: Path) -> None:
+    """A corrupted image partway through the dataset never aborts the whole run."""
+    input_root = tmp_path / "dataset_input"
+    output_root = tmp_path / "dataset_output"
+
+    _write_corrupted_file(input_root / "aaa_corrupted.jpg")
+    _write_image(input_root / "bbb_good.jpg", _make_synthetic_image(seed=11))
+    _write_corrupted_file(input_root / "ccc_corrupted.jpg")
+    _write_image(input_root / "ddd_good.jpg", _make_synthetic_image(seed=12))
+
+    summary = augment_dataset(
+        input_root,
+        output_root,
+        operators=[HorizontalFlipOperator(probability=1.0, random_state=1)],
+    )
+
+    assert summary.total_images == 4
+    assert summary.failed_images == 2
+    assert summary.augmented_images == 2
+    output_files = sorted(path.name for path in output_root.glob("*.jpg"))
+    assert len(output_files) == 2
+    assert any("bbb_good" in name for name in output_files)
+    assert any("ddd_good" in name for name in output_files)
+
+
+# ---------------------------------------------------------------------------
+# Deterministic results across identical seeds
+# ---------------------------------------------------------------------------
+
+
+def test_identical_seed_produces_identical_output_across_runs(tmp_path: Path) -> None:
+    """Two independent runs with identically seeded operators are pixel-identical."""
+    input_root = tmp_path / "dataset_input"
+    output_root_one = tmp_path / "dataset_output_one"
+    output_root_two = tmp_path / "dataset_output_two"
+
+    _write_image(input_root / "train" / "img01.jpg", _make_synthetic_image(seed=5))
+    _write_image(input_root / "train" / "img02.jpg", _make_synthetic_image(seed=6))
+
+    def _build_operators() -> list:
+        return [
+            BrightnessOperator(probability=0.7, random_state=99),
+            ContrastOperator(probability=0.7, random_state=99),
+            GaussianNoiseOperator(probability=0.7, random_state=99),
+        ]
+
+    summary_one = augment_dataset(
+        input_root, output_root_one, operators=_build_operators(), output_image_format="png"
+    )
+    summary_two = augment_dataset(
+        input_root, output_root_two, operators=_build_operators(), output_image_format="png"
+    )
+
+    assert summary_one.augmented_images == summary_two.augmented_images == 2
+
+    files_one = sorted((output_root_one / "train").glob("*.png"))
+    files_two = sorted((output_root_two / "train").glob("*.png"))
+
+    assert [path.name for path in files_one] == [path.name for path in files_two]
+    for file_one, file_two in zip(files_one, files_two):
+        assert file_one.read_bytes() == file_two.read_bytes()
+
+
+# ---------------------------------------------------------------------------
+# Multiple operators working together
+# ---------------------------------------------------------------------------
+
+
+def test_multiple_operators_all_apply_and_are_reflected_in_filename(tmp_path: Path) -> None:
+    """A chain of several always-applying operators all run and are named."""
+    input_root = tmp_path / "dataset_input"
+    output_root = tmp_path / "dataset_output"
+    _write_image(input_root / "img01.jpg", _make_synthetic_image(seed=8))
+
+    operators = [
+        BrightnessOperator(probability=1.0, random_state=1),
+        ContrastOperator(probability=1.0, random_state=2),
+        GaussianNoiseOperator(probability=1.0, random_state=3),
+        HorizontalFlipOperator(probability=1.0, random_state=4),
+    ]
+
+    summary = augment_dataset(input_root, output_root, operators=operators)
+
+    assert summary.augmented_images == 1
+    output_files = list(output_root.glob("*.jpg"))
+    assert len(output_files) == 1
+
+    output_name = output_files[0].name
+    for operator in operators:
+        assert operator.operator_name in output_name
+
+
+def test_partial_operator_application_is_reflected_in_filename(tmp_path: Path) -> None:
+    """Only operators whose probability gate actually fires appear in the filename."""
+    input_root = tmp_path / "dataset_input"
+    output_root = tmp_path / "dataset_output"
+    _write_image(input_root / "img01.jpg", _make_synthetic_image(seed=8))
+
+    operators = [
+        BrightnessOperator(probability=1.0, random_state=1, operator_name="always_on"),
+        ContrastOperator(probability=0.0, random_state=2, operator_name="always_off"),
+    ]
+
+    augment_dataset(input_root, output_root, operators=operators)
+
+    output_files = list(output_root.glob("*.jpg"))
+    assert len(output_files) == 1
+    output_name = output_files[0].name
+    assert "always_on" in output_name
+    assert "always_off" not in output_name
+
+
+# ---------------------------------------------------------------------------
+# Image count and per-run isolation
+# ---------------------------------------------------------------------------
+
+
+def test_image_count_matches_number_of_discovered_supported_files(tmp_path: Path) -> None:
+    """The reported image count matches exactly the supported files on disk."""
+    input_root = tmp_path / "dataset_input"
+    for index, extension in enumerate([".jpg", ".png", ".bmp", ".tif", ".tiff", ".jpeg"]):
+        _write_image(input_root / f"image_{index}{extension}", _make_synthetic_image(seed=index))
+    (input_root / "not_an_image.txt").write_text("ignored")
+
+    summary = augment_dataset(
+        input_root,
+        tmp_path / "dataset_output",
+        operators=[HorizontalFlipOperator(probability=1.0)],
+    )
+
+    assert summary.total_images == 6
+    assert summary.augmented_images == 6
+
+
+def test_output_dataset_does_not_mutate_input_dataset(tmp_path: Path) -> None:
+    """Running the full pipeline never modifies a single byte of the input dataset."""
+    input_root = tmp_path / "dataset_input"
+    dataset_paths = _build_synthetic_dataset(input_root)
+    original_contents = {
+        name: path.read_bytes() for name, path in dataset_paths.items() if path.is_file()
+    }
+
+    augment_dataset(
+        input_root,
+        tmp_path / "dataset_output",
+        operators=[
+            BrightnessOperator(probability=1.0, random_state=3),
+            HorizontalFlipOperator(probability=1.0, random_state=3),
+        ],
+    )
+
+    for name, path in dataset_paths.items():
+        if path.is_file():
+            assert path.read_bytes() == original_contents[name]

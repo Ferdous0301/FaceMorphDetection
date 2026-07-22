@@ -1,0 +1,34 @@
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Pytest
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+outputs/logs/*.log
+
+# Model checkpoints
+outputs/checkpoints/
+
+# Generated datasets
+datasets/aligned/
+datasets/morph/
+datasets/splits/
+datasets/raw/
+frll/
+lfw/
+datasets/raw_small/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VS Code (optional)
+.vscode/
