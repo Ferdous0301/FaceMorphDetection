@@ -1,0 +1,5 @@
+retina-face==0.0.17
+opencv-python
+numpy
+Pillow
+tqdm
