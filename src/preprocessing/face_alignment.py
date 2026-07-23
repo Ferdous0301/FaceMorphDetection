@@ -715,7 +715,11 @@ def process_dataset(
 
         logger.debug("Processing '%s'", image_path)
 
-        result = align_face(image_path, cfg)
+        result.image.save(
+            out_path,
+            format="JPEG",
+            quality=cfg.jpeg_quality,
+        )
 
         if not result.success:
             logger.warning(
