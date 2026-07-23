@@ -18,12 +18,7 @@ outputs/logs/*.log
 outputs/checkpoints/
 
 # Generated datasets
-datasets/aligned/
-datasets/morph/
-datasets/splits/
-datasets/raw/
-frll/
-lfw/
+
 datasets/raw_small/
 
 # OS
