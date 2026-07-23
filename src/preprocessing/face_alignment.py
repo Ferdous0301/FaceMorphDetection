@@ -42,7 +42,7 @@ import src.augmentation.config as config
 import cv2
 import numpy as np
 from PIL import Image
-from retinaface import RetinaFace
+from retinaface.retinaface import RetinaFace
  # type: ignore[import]
 from tqdm import tqdm
 
@@ -726,32 +726,24 @@ def process_dataset(
             continue
 
         # Save aligned image
-        # Save aligned image
-out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
 
-try:
-    if result.image is None:
-        reason = "Alignment succeeded but returned no image."
-        logger.error(reason)
-        failure_logger.log(image_path, reason)
-        n_failure += 1
-        continue
+        try:
+            if result.image is None:
+                reason = "Alignment succeeded but returned no image."
+                logger.error(reason)
+                failure_logger.log(image_path, reason)
+                n_failure += 1
+                continue
 
-    # Save the aligned image
-    result.image.save(out_path, quality=cfg.jpeg_quality)
-
-    logger.info("Saved aligned image -> %s", out_path)
-
-    if not out_path.exists():
-        raise RuntimeError(f"Image was not written to disk: {out_path}")
-
-    n_success += 1
-
-except Exception as exc:  # noqa: BLE001
-    reason = f"PIL save failed: {exc}"
-    logger.warning("FAILED '%s': %s", image_path, reason)
-    failure_logger.log(image_path, reason)
-    n_failure += 1
+            result.image.save(out_path, quality=cfg.jpeg_quality)
+            logger.debug("Saved → '%s'", out_path)
+            n_success += 1
+        except Exception as exc:  # noqa: BLE001
+            reason = f"PIL save failed: {exc}"
+            logger.warning("FAILED '%s': %s", image_path, reason)
+            failure_logger.log(image_path, reason)
+            n_failure += 1
 
     elapsed = time.perf_counter() - t_start
     n_processed = n_success + n_failure
