@@ -42,7 +42,7 @@ import src.augmentation.config as config
 import cv2
 import numpy as np
 from PIL import Image
-from retinaface.retinaface import RetinaFace
+from retinaface import RetinaFace
  # type: ignore[import]
 from tqdm import tqdm
 
