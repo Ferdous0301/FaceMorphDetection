@@ -715,7 +715,7 @@ def process_dataset(
 
         logger.debug("Processing '%s'", image_path)
 
-        result.image.save(out_path, quality=config.jpeg_quality)
+        result = align_face(image_path, cfg)
 
         if not result.success:
             logger.warning(
@@ -736,7 +736,7 @@ def process_dataset(
                 n_failure += 1
                 continue
 
-            result.image.save(output_path, quality=config.jpeg_quality)
+            result.image.save(out_path, quality=config.jpeg_quality)
             logger.debug("Saved → '%s'", out_path)
             n_success += 1
         except Exception as exc:  # noqa: BLE001
