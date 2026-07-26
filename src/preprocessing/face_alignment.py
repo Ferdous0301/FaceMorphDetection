@@ -223,8 +223,8 @@ def _parse_detections(
         )
 
         landmarks: dict = face_data.get("landmarks", {})
-        left_eye: tuple[float, float] = tuple(landmarks.get("left_eye", (0.0, 0.0)))  # type: ignore[assignment]
-        right_eye: tuple[float, float] = tuple(landmarks.get("right_eye", (0.0, 0.0)))  # type: ignore[assignment]
+        left_eye: tuple[float, float] = tuple(landmarks.get("right_eye", (0.0, 0.0)))   # type: ignore[assignment]
+        right_eye: tuple[float, float] = tuple(landmarks.get("left_eye", (0.0, 0.0)))   # type: ignore[assignment]
 
         detections.append(
             FaceDetection(
