@@ -303,9 +303,9 @@ class MorphGenerator:
         dataset_dir = self._cfg.aligned_root / dataset_name
         if not dataset_dir.is_dir():
             logger.warning(
-            "Dataset directory does not exist: %s",
-            dataset_dir,
-        )
+                "Dataset directory does not exist: %s",
+                dataset_dir,
+            )
         return
         output_dir = self._cfg.output_root / dataset_name
         output_dir.mkdir(parents=True, exist_ok=True)
