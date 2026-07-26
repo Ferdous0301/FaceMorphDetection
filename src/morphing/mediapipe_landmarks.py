@@ -2,13 +2,18 @@
 src/morphing/mediapipe_landmarks.py
 =====================================
 
-MediaPipe Face Mesh landmark detection module.
+MediaPipe Face Landmarker (Tasks API) landmark detection module.
 
-This module wraps Google's MediaPipe Face Mesh solution so that the rest of
+This module wraps Google's MediaPipe Face Landmarker task so that the rest of
 the morphing pipeline never interacts with the MediaPipe API directly.
 A single ``LandmarkDetector`` instance is created once and reused across all
-images, which avoids the overhead of re-initialising the underlying TFLite
-model on every call.
+images, which avoids the overhead of re-initialising the underlying model on
+every call.
+
+NOTE: This module was migrated from the legacy ``mp.solutions.face_mesh`` API
+to the modern ``mp.tasks.vision.FaceLandmarker`` API, because mediapipe
+removed ``mp.solutions`` in newer releases. The Tasks API requires a
+downloaded ``.task`` model file (see MODEL_PATH / detector construction).
 
 Design decisions
 ----------------
@@ -34,6 +39,7 @@ detect_landmarks(image, detector=None)
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass
 from typing import Final, Optional
 
@@ -47,9 +53,8 @@ logger = logging.getLogger(__name__)
 # Module-level constants
 # ---------------------------------------------------------------------------
 
-#: Number of landmarks produced by MediaPipe Face Mesh.
-#: Declared here so downstream modules and tests can reference it without
-#: importing MediaPipe themselves.
+#: Number of landmarks produced by MediaPipe Face Landmarker (same topology
+#: as the legacy Face Mesh model).
 NUM_LANDMARKS: Final[int] = 468
 
 #: Expected number of colour channels in a valid input image.
@@ -58,6 +63,14 @@ _EXPECTED_CHANNELS: Final[int] = 3
 #: Valid range for MediaPipe confidence thresholds.
 _CONFIDENCE_MIN: Final[float] = 0.0
 _CONFIDENCE_MAX: Final[float] = 1.0
+
+#: Default path to the downloaded FaceLandmarker .task model file.
+#: Override via the LandmarkDetector(model_path=...) argument or the
+#: MEDIAPIPE_FACE_LANDMARKER_MODEL environment variable.
+DEFAULT_MODEL_PATH: Final[str] = os.environ.get(
+    "MEDIAPIPE_FACE_LANDMARKER_MODEL",
+    "/kaggle/working/face_landmarker.task",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +111,7 @@ class LandmarkResult:
 # ---------------------------------------------------------------------------
 
 class LandmarkDetector:
-    """MediaPipe Face Mesh wrapper with single-initialisation lifecycle.
+    """MediaPipe Face Landmarker wrapper with single-initialisation lifecycle.
 
     One instance should be created per processing run and shared across all
     ``detect`` calls.  Use it as a context manager to ensure resources are
@@ -114,15 +127,19 @@ class LandmarkDetector:
         Maximum number of faces MediaPipe will attempt to detect per image.
         For morphing, this must be 1 to avoid ambiguity.  Must be ≥ 1.
     refine_landmarks : bool
-        When ``True``, MediaPipe runs the iris-refinement model in addition
-        to Face Mesh, adding extra accuracy around the eye contours.
-        Defaults to ``False``; the additional model increases CPU time without
-        benefiting the Delaunay morphing pipeline.
+        When ``True``, requests blend-shape / attention-mesh refinement
+        (iris etc.) from the Tasks API. Defaults to ``False``; the additional
+        model increases CPU time without benefiting the Delaunay morphing
+        pipeline.
     min_detection_confidence : float
         Minimum confidence score in ``[0, 1]`` for the face-detection stage.
     min_tracking_confidence : float
         Minimum confidence score in ``[0, 1]`` for the landmark-tracking
-        stage.
+        stage. (Kept for backward-compatible signature; passed through to
+        the Tasks API's min_tracking_confidence equivalent.)
+    model_path : str, optional
+        Path to the downloaded FaceLandmarker ``.task`` model file. Defaults
+        to ``DEFAULT_MODEL_PATH``.
 
     Raises
     ------
@@ -131,6 +148,8 @@ class LandmarkDetector:
         ``[0, 1]``.
     ImportError
         If the ``mediapipe`` package is not installed.
+    FileNotFoundError
+        If the ``.task`` model file cannot be found at ``model_path``.
     """
 
     def __init__(
@@ -139,6 +158,7 @@ class LandmarkDetector:
         refine_landmarks: bool = False,
         min_detection_confidence: float = 0.5,
         min_tracking_confidence: float = 0.5,
+        model_path: str = DEFAULT_MODEL_PATH,
     ) -> None:
         self._validate_init_args(
             max_num_faces, min_detection_confidence, min_tracking_confidence
@@ -147,6 +167,7 @@ class LandmarkDetector:
         self._refine_landmarks = refine_landmarks
         self._min_detection_confidence = min_detection_confidence
         self._min_tracking_confidence = min_tracking_confidence
+        self._model_path = model_path
         self._face_mesh = self._build_face_mesh()
 
     # ------------------------------------------------------------------
@@ -159,22 +180,7 @@ class LandmarkDetector:
         min_detection_confidence: float,
         min_tracking_confidence: float,
     ) -> None:
-        """Validate constructor arguments and raise ``ValueError`` if invalid.
-
-        Parameters
-        ----------
-        max_num_faces : int
-            Must be ≥ 1.
-        min_detection_confidence : float
-            Must be in ``[0, 1]``.
-        min_tracking_confidence : float
-            Must be in ``[0, 1]``.
-
-        Raises
-        ------
-        ValueError
-            On any out-of-range value.
-        """
+        """Validate constructor arguments and raise ``ValueError`` if invalid."""
         if max_num_faces < 1:
             raise ValueError(
                 f"max_num_faces must be ≥ 1, got {max_num_faces}."
@@ -190,35 +196,54 @@ class LandmarkDetector:
                 )
 
     def _build_face_mesh(self):
-        """Initialise and return a ``mediapipe.solutions.face_mesh.FaceMesh``.
+        """Initialise and return a ``mediapipe.tasks.python.vision.FaceLandmarker``.
 
         Separated from ``__init__`` so that tests can patch this method
         without mocking the entire constructor.
 
         Returns
         -------
-        mediapipe.solutions.face_mesh.FaceMesh
+        mediapipe.tasks.python.vision.FaceLandmarker
 
         Raises
         ------
         ImportError
             If ``mediapipe`` is not installed.
+        FileNotFoundError
+            If the ``.task`` model file is missing.
         """
         try:
-            import mediapipe as mp  # local import keeps module-level import cheap
+            import mediapipe as mp
+            from mediapipe.tasks import python as mp_python
+            from mediapipe.tasks.python import vision as mp_vision
         except ImportError as exc:
             raise ImportError(
                 "MediaPipe is required for landmark detection. "
                 "Install it with:  pip install mediapipe"
             ) from exc
 
-        return mp.solutions.face_mesh.FaceMesh(
-            static_image_mode=True,  # treat every call as an independent image
-            max_num_faces=self._max_num_faces,
-            refine_landmarks=self._refine_landmarks,
-            min_detection_confidence=self._min_detection_confidence,
+        if not os.path.exists(self._model_path):
+            raise FileNotFoundError(
+                f"FaceLandmarker model not found at '{self._model_path}'. "
+                "Download it with:\n"
+                "  wget -O face_landmarker.task "
+                "https://storage.googleapis.com/mediapipe-models/"
+                "face_landmarker/face_landmarker/float16/1/face_landmarker.task"
+            )
+
+        base_options = mp_python.BaseOptions(model_asset_path=self._model_path)
+        options = mp_vision.FaceLandmarkerOptions(
+            base_options=base_options,
+            running_mode=mp_vision.RunningMode.IMAGE,
+            num_faces=self._max_num_faces,
+            min_face_detection_confidence=self._min_detection_confidence,
+            min_face_presence_confidence=self._min_tracking_confidence,
             min_tracking_confidence=self._min_tracking_confidence,
+            output_face_blendshapes=False,
+            output_facial_transformation_matrixes=False,
         )
+        self._mp = mp  # keep a reference for Image construction in detect()
+        return mp_vision.FaceLandmarker.create_from_options(options)
 
     # ------------------------------------------------------------------
     # Public interface
@@ -258,7 +283,10 @@ class LandmarkDetector:
 
         try:
             rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            results = self._face_mesh.process(rgb)
+            mp_image = self._mp.Image(
+                image_format=self._mp.ImageFormat.SRGB, data=rgb
+            )
+            results = self._face_mesh.detect(mp_image)
         except Exception:
             logger.exception(
                 "MediaPipe processing failed for image of shape (%d, %d, %d).",
@@ -266,7 +294,7 @@ class LandmarkDetector:
             )
             return None
 
-        if not results.multi_face_landmarks:
+        if not results.face_landmarks:
             logger.warning(
                 "No face detected in %d×%d image. "
                 "Ensure the image is aligned and the face is clearly visible.",
@@ -274,7 +302,7 @@ class LandmarkDetector:
             )
             return None
 
-        raw = results.multi_face_landmarks[0].landmark
+        raw = results.face_landmarks[0]
         n_detected = len(raw)
 
         if n_detected != NUM_LANDMARKS:
