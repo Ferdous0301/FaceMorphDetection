@@ -19,7 +19,7 @@ outputs/checkpoints/
 
 # Generated datasets
 
-datasets/raw_small/
+
 
 # OS
 .DS_Store
