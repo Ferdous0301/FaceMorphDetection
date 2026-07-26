@@ -305,13 +305,13 @@ class LandmarkDetector:
         raw = results.face_landmarks[0]
         n_detected = len(raw)
 
-        if n_detected != NUM_LANDMARKS:
+        if n_detected < NUM_LANDMARKS:
             logger.warning(
-                "Expected %d landmarks, got %d in %d×%d image; skipping.",
+                "Expected at least %d landmarks, got %d in %d×%d image; skipping.",
                 NUM_LANDMARKS, n_detected, w, h,
             )
             return None
-
+        raw = raw[:NUM_LANDMARKS]
         # Convert normalised [0, 1] coordinates to pixel space in one
         # vectorised operation to avoid a Python-level loop.
         scale = np.array([w, h], dtype=np.float32)
