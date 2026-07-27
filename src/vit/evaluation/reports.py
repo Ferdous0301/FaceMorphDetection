@@ -13,8 +13,8 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 
-from vit.evaluation import metrics as metric_fns
-from vit.evaluation.evaluator import EvaluationResult
+from src.vit.evaluation import metrics as metric_fns
+from src.vit.evaluation.evaluator import EvaluationResult
 
 logger = logging.getLogger(__name__)
 

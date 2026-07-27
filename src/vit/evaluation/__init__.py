@@ -13,15 +13,15 @@ logits, probabilities, predictions, labels, checkpoints) and provides:
 No training logic lives in this package.
 """
 
-from vit.evaluation.evaluator import EvaluationResult, Evaluator
-from vit.evaluation.prediction_analyzer import (
+from src.vit.evaluation.evaluator import EvaluationResult, Evaluator
+from src.vit.evaluation.prediction_analyzer import (
     MisclassificationRecord,
     PredictionAnalysis,
     PredictionAnalyzer,
     PredictionRecord,
 )
-from vit.evaluation.reports import ExperimentSummary
-from vit.evaluation.results_exporter import ResultsExporter
+from src.vit.evaluation.reports import ExperimentSummary
+from src.vit.evaluation.results_exporter import ResultsExporter
 
 __all__ = [
     "Evaluator",

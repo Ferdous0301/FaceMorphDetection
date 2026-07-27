@@ -19,14 +19,14 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 from torch.utils.data import DataLoader
 
-from vit.checkpoint.checkpoint_manager import CheckpointManager, CheckpointState
-from vit.configs.schema import ExperimentConfig, TrainingConfig
-from vit.engine.early_stopping import EarlyStopping
-from vit.engine.evaluator import Evaluator
-from vit.logging_utils.experiment_logger import ExperimentLogger
-from vit.metrics.classification_metrics import compute_accuracy, compute_auc, compute_eer
-from vit.metrics.metric_tracker import MetricTracker
-from vit.utils.amp import autocast_context, build_grad_scaler
+from src.vit.checkpoint.checkpoint_manager import CheckpointManager, CheckpointState
+from src.vit.configs.schema import ExperimentConfig, TrainingConfig
+from src.vit.engine.early_stopping import EarlyStopping
+from src.vit.engine.evaluator import Evaluator
+from src.vit.logging_utils.experiment_logger import ExperimentLogger
+from src.vit.metrics.classification_metrics import compute_accuracy, compute_auc, compute_eer
+from src.vit.metrics.metric_tracker import MetricTracker
+from src.vit.utils.amp import autocast_context, build_grad_scaler
 
 __all__ = ["Trainer", "EpochResult", "TrainingHistory"]
 

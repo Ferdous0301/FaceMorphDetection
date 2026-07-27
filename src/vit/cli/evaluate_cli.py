@@ -14,15 +14,15 @@ from pathlib import Path
 
 import torch
 
-from vit.checkpoint.checkpoint_manager import CheckpointManager
-from vit.configs.schema import ConfigValidationError, load_experiment_config
-from vit.data.datamodule import ViTDataModule
-from vit.engine.evaluator import EvaluationResult, Evaluator
-from vit.engine.loss import build_loss
-from vit.models.vit_model import ViTMorphClassifier
-from vit.utils.device import resolve_device
-from vit.utils.seed import set_global_seed
-from vit.visualization.confusion_matrix import plot_confusion_matrix
+from src.vit.checkpoint.checkpoint_manager import CheckpointManager
+from src.vit.configs.schema import ConfigValidationError, load_experiment_config
+from src.vit.data.datamodule import ViTDataModule
+from src.vit.engine.evaluator import EvaluationResult, Evaluator
+from src.vit.engine.loss import build_loss
+from src.vit.models.vit_model import ViTMorphClassifier
+from src.vit.utils.device import resolve_device
+from src.vit.utils.seed import set_global_seed
+from src.vit.visualization.confusion_matrix import plot_confusion_matrix
 
 __all__ = ["main"]
 

@@ -13,8 +13,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from vit.logging_utils.csv_logger import CSVLogger
-from vit.logging_utils.tb_logger import TensorBoardLogger
+from src.vit.logging_utils.csv_logger import CSVLogger
+from src.vit.logging_utils.tb_logger import TensorBoardLogger
 
 __all__ = ["ExperimentLogger"]
 

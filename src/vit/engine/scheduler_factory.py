@@ -30,7 +30,7 @@ from torch.optim.lr_scheduler import (
     _LRScheduler,
 )
 
-from vit.configs.schema import SchedulerConfig
+from src.vit.configs.schema import SchedulerConfig
 
 _SUPPORTED_SCHEDULERS = ("cosine", "step", "plateau", "none")
 

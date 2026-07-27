@@ -22,9 +22,9 @@ from typing import Optional, Sequence, Union
 
 import numpy as np
 
-from vit.evaluation import reports as report_fns
-from vit.evaluation.evaluator import EvaluationResult
-from vit.evaluation.prediction_analyzer import MisclassificationRecord, PredictionRecord
+from src.vit.evaluation import reports as report_fns
+from src.vit.evaluation.evaluator import EvaluationResult
+from src.vit.evaluation.prediction_analyzer import MisclassificationRecord, PredictionRecord
 
 logger = logging.getLogger(__name__)
 

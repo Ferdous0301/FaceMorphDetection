@@ -13,9 +13,9 @@ Public API:
 
 from __future__ import annotations
 
-from vit.models.backbone_factory import SUPPORTED_BACKBONES, build_backbone, get_hidden_dim
-from vit.models.classifier_head import ClassifierHead
-from vit.models.vit_model import ViTMorphClassifier
+from src.vit.models.backbone_factory import SUPPORTED_BACKBONES, build_backbone, get_hidden_dim
+from src.vit.models.classifier_head import ClassifierHead
+from src.vit.models.vit_model import ViTMorphClassifier
 
 __all__ = [
     "build_backbone",

@@ -12,9 +12,9 @@ import csv
 from pathlib import Path
 from typing import List
 
-from vit.configs.schema import load_experiment_config
-from vit.inference.predictor import PredictionResult, ViTPredictor
-from vit.utils.device import resolve_device
+from src.vit.configs.schema import load_experiment_config
+from src.vit.inference.predictor import PredictionResult, ViTPredictor
+from src.vit.utils.device import resolve_device
 
 __all__ = ["main"]
 

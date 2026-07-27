@@ -16,7 +16,7 @@ The public API of this sub-package is intentionally small and stable:
 
 from __future__ import annotations
 
-from FaceMorphDetection.Src.vit.configs.schema import (
+from src.vit.configs.schema import (
     DataConfig,
     ExperimentConfig,
     ModelConfig,

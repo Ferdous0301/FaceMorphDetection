@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional
 
 import torch
 
-from vit.configs.schema import ExperimentConfig
+from src.vit.configs.schema import ExperimentConfig
 
 _BEST_FILENAME = "best.pt"
 _LATEST_FILENAME = "last.pt"

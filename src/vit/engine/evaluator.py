@@ -18,14 +18,14 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 from torch.utils.data import DataLoader
 
-from vit.metrics.classification_metrics import (
+from src.vit.metrics.classification_metrics import (
     compute_accuracy,
     compute_apcer_bpcer,
     compute_auc,
     compute_confusion_matrix,
     compute_eer,
 )
-from vit.metrics.metric_tracker import MetricTracker
+from src.vit.metrics.metric_tracker import MetricTracker
 
 __all__ = ["Evaluator", "EvaluationResult"]
 

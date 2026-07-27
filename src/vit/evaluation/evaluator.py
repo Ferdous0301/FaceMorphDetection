@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
-from vit.evaluation import metrics as metric_fns
+from src.vit.evaluation import metrics as metric_fns
 
 if TYPE_CHECKING:  # pragma: no cover - typing only, avoids a hard torch dependency
     from torch import nn

@@ -13,7 +13,7 @@ from typing import Callable, Dict, Iterable
 import torch.nn as nn
 from torch.optim import SGD, Adam, AdamW, Optimizer
 
-from vit.configs.schema import OptimizerConfig
+from src.vit.configs.schema import OptimizerConfig
 
 _SUPPORTED_OPTIMIZERS = ("adamw", "adam", "sgd")
 

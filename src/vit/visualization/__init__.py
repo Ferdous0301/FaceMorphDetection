@@ -11,8 +11,8 @@ Public API:
 
 from __future__ import annotations
 
-from vit.visualization.attention_maps import plot_attention_rollout
-from vit.visualization.confusion_matrix import plot_confusion_matrix
-from vit.visualization.curves import plot_training_curves
+from src.vit.visualization.attention_maps import plot_attention_rollout
+from src.vit.visualization.confusion_matrix import plot_confusion_matrix
+from src.vit.visualization.curves import plot_training_curves
 
 __all__ = ["plot_training_curves", "plot_confusion_matrix", "plot_attention_rollout"]

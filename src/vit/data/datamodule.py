@@ -14,10 +14,10 @@ from typing import Callable, Dict, Optional
 from torch import Tensor
 from torch.utils.data import DataLoader
 
-from FaceMorphDetection.Src.vit.configs.schema import DataConfig
-from FaceMorphDetection.Src.vit.data.dataset import MorphDataset
-from FaceMorphDetection.Src.vit.data.transforms import build_eval_transforms, build_train_transforms
-from FaceMorphDetection.Src.vit.utils.seed import make_generator, seed_worker
+from src.vit.configs.schema import DataConfig
+from src.vit.data.dataset import MorphDataset
+from src.vit.data.transforms import build_eval_transforms, build_train_transforms
+from src.vit.utils.seed import make_generator, seed_worker
 
 __all__ = ["ViTDataModule"]
 

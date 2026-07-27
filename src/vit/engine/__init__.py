@@ -18,12 +18,12 @@ Public API:
 
 from __future__ import annotations
 
-from vit.engine.early_stopping import EarlyStopping
-from vit.engine.evaluator import EvaluationResult, Evaluator
-from vit.engine.loss import FocalLoss, build_loss
-from vit.engine.optimizer_factory import build_optimizer
-from vit.engine.scheduler_factory import build_scheduler
-from vit.engine.trainer import EpochResult, Trainer, TrainingHistory
+from src.vit.engine.early_stopping import EarlyStopping
+from src.vit.engine.evaluator import EvaluationResult, Evaluator
+from src.vit.engine.loss import FocalLoss, build_loss
+from src.vit.engine.optimizer_factory import build_optimizer
+from src.vit.engine.scheduler_factory import build_scheduler
+from src.vit.engine.trainer import EpochResult, Trainer, TrainingHistory
 
 __all__ = [
     "build_loss",

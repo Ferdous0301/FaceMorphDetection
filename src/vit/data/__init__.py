@@ -14,9 +14,9 @@ Public API:
 
 from __future__ import annotations
 
-from FaceMorphDetection.Src.vit.data.dataset import MorphDataset
-from FaceMorphDetection.Src.vit.data.datamodule import ViTDataModule
-from FaceMorphDetection.Src.vit.data.transforms import (
+from src.vit.data.dataset import MorphDataset
+from src.vit.data.datamodule import ViTDataModule
+from src.vit.data.transforms import (
     IMAGENET_MEAN,
     IMAGENET_STD,
     build_eval_transforms,

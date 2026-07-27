@@ -11,20 +11,20 @@ from pathlib import Path
 
 import torch
 
-from vit.checkpoint.checkpoint_manager import CheckpointManager
-from vit.configs.schema import ConfigValidationError, ExperimentConfig, load_experiment_config
-from vit.data.datamodule import ViTDataModule
-from vit.engine.loss import build_loss
-from vit.engine.optimizer_factory import build_optimizer
-from vit.engine.scheduler_factory import build_scheduler
-from vit.engine.trainer import Trainer
-from vit.logging_utils.csv_logger import CSVLogger
-from vit.logging_utils.experiment_logger import ExperimentLogger
-from vit.logging_utils.tb_logger import TensorBoardLogger
-from vit.models.vit_model import ViTMorphClassifier
-from vit.utils.device import get_device_info, resolve_device
-from vit.utils.seed import set_global_seed
-from vit.visualization.curves import plot_training_curves
+from src.vit.checkpoint.checkpoint_manager import CheckpointManager
+from src.vit.configs.schema import ConfigValidationError, ExperimentConfig, load_experiment_config
+from src.vit.data.datamodule import ViTDataModule
+from src.vit.engine.loss import build_loss
+from src.vit.engine.optimizer_factory import build_optimizer
+from src.vit.engine.scheduler_factory import build_scheduler
+from src.vit.engine.trainer import Trainer
+from src.vit.logging_utils.csv_logger import CSVLogger
+from src.vit.logging_utils.experiment_logger import ExperimentLogger
+from src.vit.logging_utils.tb_logger import TensorBoardLogger
+from src.vit.models.vit_model import ViTMorphClassifier
+from src.vit.utils.device import get_device_info, resolve_device
+from src.vit.utils.seed import set_global_seed
+from src.vit.visualization.curves import plot_training_curves
 
 __all__ = ["main"]
 

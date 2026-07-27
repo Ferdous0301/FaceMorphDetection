@@ -7,6 +7,6 @@ Public API:
 
 from __future__ import annotations
 
-from vit.checkpoint.checkpoint_manager import CheckpointManager, CheckpointState
+from src.vit.checkpoint.checkpoint_manager import CheckpointManager, CheckpointState
 
 __all__ = ["CheckpointManager", "CheckpointState"]

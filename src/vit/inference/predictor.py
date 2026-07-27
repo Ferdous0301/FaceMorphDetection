@@ -11,10 +11,10 @@ import torch.nn.functional as F
 from PIL import Image
 from torch import Tensor, nn
 
-from vit.checkpoint.checkpoint_manager import CheckpointManager
-from vit.configs.schema import ModelConfig
-from vit.data.transforms import build_eval_transforms
-from vit.models.vit_model import ViTMorphClassifier
+from src.vit.checkpoint.checkpoint_manager import CheckpointManager
+from src.vit.configs.schema import ModelConfig
+from src.vit.data.transforms import build_eval_transforms
+from src.vit.models.vit_model import ViTMorphClassifier
 
 __all__ = ["ViTPredictor", "PredictionResult"]
 

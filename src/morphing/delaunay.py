@@ -454,4 +454,4 @@ def warp_and_blend(
         len(tri_indices),
         morphed.shape,
     )
-    return morpheds
+    return morphed

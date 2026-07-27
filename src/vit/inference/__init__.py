@@ -7,6 +7,6 @@ Public API:
 
 from __future__ import annotations
 
-from vit.inference.predictor import PredictionResult, ViTPredictor
+from src.vit.inference.predictor import PredictionResult, ViTPredictor
 
 __all__ = ["ViTPredictor", "PredictionResult"]

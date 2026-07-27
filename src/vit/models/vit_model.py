@@ -8,9 +8,9 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from vit.configs.schema import ModelConfig
-from vit.models.backbone_factory import build_backbone, get_hidden_dim
-from vit.models.classifier_head import ClassifierHead
+from src.vit.configs.schema import ModelConfig
+from src.vit.models.backbone_factory import build_backbone, get_hidden_dim
+from src.vit.models.classifier_head import ClassifierHead
 
 __all__ = ["ViTMorphClassifier"]
 

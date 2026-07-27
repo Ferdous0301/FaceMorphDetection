@@ -9,7 +9,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from vit.engine.trainer import TrainingHistory
+from src.vit.engine.trainer import TrainingHistory
 
 __all__ = ["plot_training_curves"]
 
